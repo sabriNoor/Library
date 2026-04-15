@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(OperationNotAllowedException.class)
     public ProblemDetail handleOperationNotAllowed(OperationNotAllowedException ex) {
-        return build(HttpStatus.BAD_REQUEST, "Operation Not Allowed", ex.getMessage());
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, "Operation Not Allowed", ex.getMessage());
     }
 
     @ExceptionHandler({
