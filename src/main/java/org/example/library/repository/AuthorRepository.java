@@ -16,6 +16,9 @@ public interface AuthorRepository extends JpaRepository<Author,Long> {
 
     boolean existsByEmail(String email);
 
-    @Query("SELECT a FROM Author a WHERE a.email  LIKE CONCAT('%', :domain)")
+    @Query(
+            value = "SELECT * FROM authors a WHERE a.email LIKE CONCAT('%@', :domain)",
+            nativeQuery = true
+    )
     List<Author> findAuthorByEmailDomain(String domain);
 }
