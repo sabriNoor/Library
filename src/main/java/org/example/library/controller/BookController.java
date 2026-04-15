@@ -21,7 +21,7 @@ public class BookController {
     // ✅ CREATE BOOK
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BookResponse createBook(@RequestBody CreateBookRequest request) {
+    public BookResponse createBook(@Valid @RequestBody CreateBookRequest request) {
         return bookService.createBook(request);
     }
 
