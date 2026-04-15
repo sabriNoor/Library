@@ -28,7 +28,10 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Operation Not Allowed", ex.getMessage());
     }
 
-    @ExceptionHandler(ConcurrencyException.class)
+    @ExceptionHandler({
+            ConcurrencyException.class,
+            ObjectOptimisticLockingFailureException.class
+    })
     public ProblemDetail handleConcurrency(ConcurrencyException ex) {
         return build(HttpStatus.CONFLICT, "Concurrency Conflict", ex.getMessage());
     }
@@ -38,11 +41,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Internal Server Error",
                 "Something went wrong");
-    }
-
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ProblemDetail handleOptimisticLocking(ObjectOptimisticLockingFailureException ex) {
-        return build(HttpStatus.CONFLICT, "Concurrency Conflict", ex.getMessage());
     }
 
     // ✅ Reusable builder (VERY IMPORTANT improvement)
