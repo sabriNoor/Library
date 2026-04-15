@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
             ConcurrencyException.class,
             ObjectOptimisticLockingFailureException.class
     })
-    public ProblemDetail handleConcurrency(ConcurrencyException ex) {
+    public ProblemDetail handleConcurrency(Exception ex) {
         return build(HttpStatus.CONFLICT, "Concurrency Conflict", ex.getMessage());
     }
 
