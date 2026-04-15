@@ -92,7 +92,10 @@ public class BookServiceImpl implements BookService {
             existing.setTitle(request.title());
         }
 
-        if (request.isbn() != null) {
+        if (request.isbn() != null ) {
+            if(bookRepository.existsByIsbn(request.isbn())){
+                throw new ConflictException("ISBN already in use");
+            }
             existing.setIsbn(request.isbn());
         }
 
