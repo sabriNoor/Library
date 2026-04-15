@@ -57,7 +57,6 @@ class BorrowServiceImplTest {
         book = Book.builder()
                 .id(1L)
                 .title("Book")
-                .available(true)
                 .build();
 
         borrow = Borrow.builder()
@@ -82,7 +81,6 @@ class BorrowServiceImplTest {
 
         assertThat(response.bookId()).isEqualTo(1L);
 
-        verify(bookRepository).save(book);
         verify(borrowRepository).save(any(Borrow.class));
     }
 
@@ -127,7 +125,6 @@ class BorrowServiceImplTest {
     @Test
     @DisplayName("Should return book successfully")
     void shouldReturnBookSuccessfully() {
-        book.setAvailable(false);
 
         when(borrowRepository.findById(1L)).thenReturn(Optional.of(borrow));
         when(borrowRepository.save(any())).thenReturn(borrow);
@@ -136,7 +133,6 @@ class BorrowServiceImplTest {
 
         assertThat(response.returnDate()).isNotNull();
 
-        verify(bookRepository).save(book);
         verify(borrowRepository).save(borrow);
     }
 

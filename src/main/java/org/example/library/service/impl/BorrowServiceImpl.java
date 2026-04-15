@@ -57,10 +57,6 @@ public class BorrowServiceImpl implements BorrowService {
                 .borrowDate(LocalDateTime.now())
                 .build();
 
-        // ✅ Update availability
-        book.setAvailable(false);
-        bookRepository.save(book);
-
         Borrow saved = borrowRepository.save(borrow);
 
         return mapToResponse(saved);
@@ -80,10 +76,6 @@ public class BorrowServiceImpl implements BorrowService {
         }
 
         borrow.setReturnDate(LocalDateTime.now());
-
-        Book book = borrow.getBook();
-        book.setAvailable(true);
-        bookRepository.save(book);
 
         Borrow saved = borrowRepository.save(borrow);
 

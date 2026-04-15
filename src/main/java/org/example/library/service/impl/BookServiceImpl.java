@@ -45,7 +45,6 @@ public class BookServiceImpl implements BookService {
                 .genre(request.genre())
                 .tags(request.tags())
                 .author(author)
-                .available(true)
                 .build();
 
         return mapToResponse(bookRepository.save(book));
@@ -53,7 +52,8 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookResponse getBookById(Long id) {
-        return mapToResponse(fetchBookById(id));
+        return bookRepository.findBookById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
     }
 
     @Override
@@ -138,13 +138,9 @@ public class BookServiceImpl implements BookService {
             throw new BadRequestException("Book IDs list cannot be empty");
         }
 
-        // 1. Update borrow records (set returnDate)
         int returnedCount = borrowRepository.markBorrowsAsReturned(bookIds);
 
-        // 2. Update books availability
-        int updatedCount = bookRepository.markBooksAsAvailable(bookIds);
-
-        if (updatedCount != bookIds.size()) {
+        if (returnedCount != bookIds.size()) {
             throw new ResourceNotFoundException("One or more books not found");
         }
     }
@@ -158,6 +154,10 @@ public class BookServiceImpl implements BookService {
 
     // ✅ Mapper
     private BookResponse mapToResponse(Book book) {
+        boolean available = borrowRepository
+                .findByBookIdAndReturnDateIsNull(book.getId())
+                .isEmpty();
+
         return new BookResponse(
                 book.getId(),
                 book.getIsbn(),
@@ -165,7 +165,7 @@ public class BookServiceImpl implements BookService {
                 book.getAuthor().getName(),
                 book.getGenre(),
                 book.getTags(),
-                book.isAvailable(),
+                available,
                 book.getAuthor().getId()
         );
     }

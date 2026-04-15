@@ -59,7 +59,6 @@ class BookServiceImplTest {
                 .isbn("isbn")
                 .genre("Fiction")
                 .author(author)
-                .available(true)
                 .build();
     }
 
@@ -73,6 +72,8 @@ class BookServiceImplTest {
         when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
         when(bookRepository.existsByIsbn("isbn")).thenReturn(false);
         when(bookRepository.save(any())).thenReturn(book);
+        when(borrowRepository.findByBookIdAndReturnDateIsNull(any()))
+                .thenReturn(Optional.empty());
 
         var response = bookService.createBook(request);
 
@@ -111,19 +112,23 @@ class BookServiceImplTest {
     @Test
     @DisplayName("Should return book by id")
     void shouldReturnBook() {
-        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        BookResponse mockResponse = new BookResponse(
+                1L, "isbn", "Title", "Author", "Fiction", null, true, 1L
+        );
+
+        when(bookRepository.findBookById(1L)).thenReturn(Optional.of(mockResponse));
 
         var response = bookService.getBookById(1L);
 
         assertThat(response.title()).isEqualTo("Title");
 
-        verify(bookRepository).findById(1L);
+        verify(bookRepository).findBookById(1L);
     }
 
     @Test
     @DisplayName("Should throw when book not found")
     void shouldThrowWhenBookNotFound() {
-        when(bookRepository.findById(1L)).thenReturn(Optional.empty());
+        when(bookRepository.findBookById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bookService.getBookById(1L))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -138,6 +143,8 @@ class BookServiceImplTest {
 
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(bookRepository.existsByIsbn("new-isbn")).thenReturn(false);
+        when(borrowRepository.findByBookIdAndReturnDateIsNull(any()))
+                .thenReturn(Optional.empty());
 
         var response = bookService.updateBook(1L, request);
 
@@ -190,11 +197,9 @@ class BookServiceImplTest {
         BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L));
 
         when(borrowRepository.markBorrowsAsReturned(request.bookIds())).thenReturn(2);
-        when(bookRepository.markBooksAsAvailable(request.bookIds())).thenReturn(2);
 
         bookService.markBooksAsAvailable(request);
 
-        verify(bookRepository).markBooksAsAvailable(request.bookIds());
         verify(borrowRepository).markBorrowsAsReturned(request.bookIds());
     }
 
@@ -212,8 +217,7 @@ class BookServiceImplTest {
     void shouldThrowWhenNotAllBooksUpdated() {
         BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L));
 
-        when(borrowRepository.markBorrowsAsReturned(request.bookIds())).thenReturn(2);
-        when(bookRepository.markBooksAsAvailable(request.bookIds())).thenReturn(1);
+        when(borrowRepository.markBorrowsAsReturned(request.bookIds())).thenReturn(1);
 
         assertThatThrownBy(() -> bookService.markBooksAsAvailable(request))
                 .isInstanceOf(ResourceNotFoundException.class);

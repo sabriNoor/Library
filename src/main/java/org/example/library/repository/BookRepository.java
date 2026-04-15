@@ -25,11 +25,13 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                b.author.name AS authorName,
                b.genre AS genre,
                b.tags AS tags,
-               b.available AS available,
+               true AS available,
                b.author.id AS authorId
         FROM Book b
         JOIN b.author a
-        WHERE b.available = true
+        LEFT JOIN Borrow br 
+            ON br.book = b AND br.returnDate IS NULL
+        WHERE br.id IS NULL
     """)
     List<BookResponse> findAvailableBooks();
 
@@ -43,10 +45,15 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                b.author.name AS authorName,
                b.genre AS genre,
                b.tags AS tags,
-               b.available AS available,
+               CASE 
+                   WHEN br.id IS NULL THEN true
+                   ELSE false
+               END AS available,
                b.author.id AS authorId
         FROM Book b
         JOIN b.author a
+        LEFT JOIN Borrow br 
+            ON br.book = b AND br.returnDate IS NULL
         WHERE a.id = :authorId
     """)
     List<BookResponse> findBooksByAuthor(@Param("authorId") Long authorId);
@@ -59,10 +66,15 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                b.author.name AS authorName,
                b.genre AS genre,
                b.tags AS tags,
-               b.available AS available,
+               CASE 
+                   WHEN br.id IS NULL THEN true
+                   ELSE false
+               END AS available,
                b.author.id AS authorId
         FROM Book b
         JOIN b.author a
+        LEFT JOIN Borrow br 
+            ON br.book = b AND br.returnDate IS NULL
         WHERE b.id = :id
     """)
     Optional<BookResponse> findBookById(@Param("id") Long id);
@@ -72,8 +84,13 @@ public interface BookRepository extends JpaRepository<Book, Long> {
         SELECT b.id AS id,
                b.title AS title,
                b.isbn AS isbn,
-               b.available AS available
+               CASE 
+                   WHEN br.id IS NULL THEN true
+                   ELSE false
+               END AS available
         FROM Book b
+        LEFT JOIN Borrow br 
+            ON br.book = b AND br.returnDate IS NULL
         WHERE b.author.id = :authorId
     """)
     List<BookBasic> findBasicBooksByAuthor(@Param("authorId") Long authorId);
@@ -83,8 +100,13 @@ public interface BookRepository extends JpaRepository<Book, Long> {
         SELECT b.id AS id,
                b.title AS title,
                b.isbn AS isbn,
-               b.available AS available
+               CASE 
+                   WHEN br.id IS NULL THEN true
+                   ELSE false
+               END AS available
         FROM books b
+        LEFT JOIN borrows br 
+            ON br.book_id = b.id AND br.return_date IS NULL
         WHERE :tag = ANY(b.tags)
     """, nativeQuery = true)
     List<BookBasic> findByTag(@Param("tag") String tag);
@@ -93,8 +115,4 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query(value = "SELECT DISTINCT unnest(tags) FROM books", nativeQuery = true)
     List<String> findAllTags();
 
-    // ✅ Bulk update availability
-    @Modifying
-    @Query("UPDATE Book b SET b.available = true WHERE b.id IN :ids ")
-    int markBooksAsAvailable(@Param("ids") List<Long> ids);
 }
