@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -41,6 +42,26 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Internal Server Error",
                 "Something went wrong");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+
+        if (ex.getRequiredType() != null &&
+                ex.getRequiredType().equals(java.time.LocalDateTime.class)) {
+
+            return build(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid Date Format",
+                    "Expected ISO format: yyyy-MM-dd'T'HH:mm:ss"
+            );
+        }
+
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "Invalid Parameter",
+                "Request parameter type mismatch"
+        );
     }
 
     // ✅ Reusable builder (VERY IMPORTANT improvement)
