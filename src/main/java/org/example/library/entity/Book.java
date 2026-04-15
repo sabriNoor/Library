@@ -23,7 +23,6 @@ public class Book {
     @Column(unique = true, nullable = false)
     private String isbn;
 
-    @Column(nullable = false)
     private String genre;
 
     @JdbcTypeCode(SqlTypes.ARRAY)

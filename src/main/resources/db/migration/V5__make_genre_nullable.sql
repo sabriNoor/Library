@@ -1,0 +1,2 @@
+ALTER TABLE books
+    ALTER COLUMN genre DROP NOT NULL;

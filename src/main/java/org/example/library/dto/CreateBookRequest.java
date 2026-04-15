@@ -10,7 +10,6 @@ public record CreateBookRequest(
         @NotBlank
         String isbn,
 
-        @NotBlank
         String genre,
 
         String[] tags,
