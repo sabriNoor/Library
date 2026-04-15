@@ -79,13 +79,6 @@ public class AuthorServiceImpl implements AuthorService {
 
         Author existing = findAuthorById(id);
 
-        if (author.email() != null &&
-                authorRepository.existsByEmail(author.email()) &&
-                !existing.getEmail().equals(author.email())) {
-
-            throw new ConflictException("Email already in use");
-        }
-
         // ✅ Update fields safely
         if (author.name() != null) {
             existing.setName(author.name());
