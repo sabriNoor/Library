@@ -50,8 +50,8 @@ public class BookController {
     }
 
     // ✅ GET BOOKS BY TAG
-    @GetMapping("/tag")
-    public List<BookBasic> getBooksByTag(@RequestParam String tag) {
+    @GetMapping("/tag/{tag}")
+    public List<BookBasic> getBooksByTag(@PathVariable String tag) {
         return bookService.getBooksByTag(tag);
     }
 
