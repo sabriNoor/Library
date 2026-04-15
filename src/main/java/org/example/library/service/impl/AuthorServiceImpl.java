@@ -1,5 +1,6 @@
 package org.example.library.service.impl;
 
+import jakarta.transaction.Transactional;
 import org.example.library.dto.AuthorResponse;
 import org.example.library.dto.CreateAuthorRequest;
 import org.example.library.dto.UpdateAuthorRequest;
@@ -26,6 +27,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Transactional
     public AuthorResponse createAuthor(CreateAuthorRequest author) {
 
         authorRepository.findAuthorByEmail(author.email())
@@ -72,6 +74,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Transactional
     public AuthorResponse updateAuthor(Long id, UpdateAuthorRequest author) {
 
         Author existing = findAuthorById(id);
@@ -96,6 +99,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Transactional
     public void deleteAuthor(Long id) {
 
         Author author = findAuthorById(id);
