@@ -2,6 +2,7 @@ package org.example.library.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
 
 @RestControllerAdvice
@@ -37,6 +38,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Internal Server Error",
                 "Something went wrong");
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLocking(ObjectOptimisticLockingFailureException ex) {
+        return build(HttpStatus.CONFLICT, "Concurrency Conflict", ex.getMessage());
     }
 
     // ✅ Reusable builder (VERY IMPORTANT improvement)

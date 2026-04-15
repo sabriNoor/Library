@@ -85,31 +85,27 @@ public class BookServiceImpl implements BookService {
     @Transactional
     public BookResponse updateBook(Long id, UpdateBookRequest request) {
 
-        try {
-            Book existing = fetchBookById(id);
+        Book existing = fetchBookById(id);
 
-            // ✅ Partial update
-            if (request.title() != null) {
-                existing.setTitle(request.title());
-            }
-
-            if (request.isbn() != null) {
-                existing.setIsbn(request.isbn());
-            }
-
-            if (request.genre() != null) {
-                existing.setGenre(request.genre());
-            }
-
-            if (request.tags() != null) {
-                existing.setTags(request.tags());
-            }
-
-            return mapToResponse(existing);
-
-        } catch (OptimisticLockException ex) {
-            throw new ConcurrencyException("Book was updated by another transaction");
+        // ✅ Partial update
+        if (request.title() != null) {
+            existing.setTitle(request.title());
         }
+
+        if (request.isbn() != null) {
+            existing.setIsbn(request.isbn());
+        }
+
+        if (request.genre() != null) {
+            existing.setGenre(request.genre());
+        }
+
+        if (request.tags() != null) {
+            existing.setTags(request.tags());
+        }
+
+        return mapToResponse(existing);
+
     }
 
     @Override
