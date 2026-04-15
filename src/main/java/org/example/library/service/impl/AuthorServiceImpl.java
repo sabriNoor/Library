@@ -90,6 +90,12 @@ public class AuthorServiceImpl implements AuthorService {
         if (author.name() != null) {
             existing.setName(author.name());
         }
+        if (author.email() != null &&
+                !author.email().equals(existing.getEmail()) &&
+                authorRepository.existsByEmail(author.email())) {
+
+            throw new ConflictException("ISBN already in use");
+        }
 
         if (author.email() != null) {
             existing.setEmail(author.email());
