@@ -76,7 +76,7 @@ public class BookController {
     }
 
     @PutMapping("/available")
-    public void markBooksAsAvailable(@RequestBody BookIdsRequest request) {
+    public void markBooksAsAvailable(@Valid @RequestBody BookIdsRequest request) {
         bookService.markBooksAsAvailable(request);
     }
 }
