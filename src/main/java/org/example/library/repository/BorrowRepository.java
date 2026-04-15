@@ -41,7 +41,7 @@ public interface BorrowRepository extends JpaRepository<Borrow,Long> {
     // ✅ Native query: most borrowed books since a date
     @Query(value = """
         SELECT book_id, COUNT(*) as borrow_count
-        FROM borrow
+        FROM borrows
         WHERE borrow_date >= :date
         GROUP BY book_id
         ORDER BY borrow_count DESC
