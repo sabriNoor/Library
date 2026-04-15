@@ -160,7 +160,8 @@ public class BookServiceImpl implements BookService {
                 book.getAuthor().getName(),
                 book.getGenre(),
                 book.getTags(),
-                book.isAvailable()
+                book.isAvailable(),
+                book.getAuthor().getId()
         );
     }
 }

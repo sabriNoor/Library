@@ -7,6 +7,7 @@ public record BookResponse(
         String authorName,
         String genre,
         String[] tags,
-        boolean available
+        boolean available,
+        Long authorId
 ) {
 }

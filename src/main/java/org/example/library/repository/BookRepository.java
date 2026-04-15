@@ -23,7 +23,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                b.author.name AS authorName,
                b.genre AS genre,
                b.tags AS tags,
-               b.available AS available
+               b.available AS available,
+               b.author.id AS authorId
         FROM Book b
         JOIN b.author a
         WHERE b.available = true
@@ -40,7 +41,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                b.author.name AS authorName,
                b.genre AS genre,
                b.tags AS tags,
-               b.available AS available
+               b.available AS available,
+               b.author.id AS authorId
         FROM Book b
         JOIN b.author a
         WHERE a.id = :authorId
@@ -55,7 +57,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                b.author.name AS authorName,
                b.genre AS genre,
                b.tags AS tags,
-               b.available AS available
+               b.available AS available,
+               b.author.id AS authorId
         FROM Book b
         JOIN b.author a
         WHERE b.id = :id

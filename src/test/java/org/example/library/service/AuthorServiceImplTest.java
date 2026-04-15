@@ -200,7 +200,8 @@ class AuthorServiceImplTest {
                                 "Author Name",
                                 "Fiction",
                                 new String[]{"tag1", "tag2"},
-                                true
+                                true,
+                                1L
                         )
                 ));
 
