@@ -87,7 +87,7 @@ public class AuthorServiceImpl implements AuthorService {
                 !author.email().equals(existing.getEmail()) &&
                 authorRepository.existsByEmail(author.email())) {
 
-            throw new ConflictException("ISBN already in use");
+            throw new ConflictException("Email already in use");
         }
 
         if (author.email() != null) {
