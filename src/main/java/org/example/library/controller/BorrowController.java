@@ -1,6 +1,7 @@
 package org.example.library.controller;
 
 import jakarta.validation.Valid;
+import org.example.library.dto.BookIdsRequest;
 import org.example.library.dto.BorrowRequest;
 import org.example.library.dto.BorrowResponse;
 import org.example.library.dto.MostBorrowedBook;
@@ -50,5 +51,11 @@ public class BorrowController {
     @GetMapping("/most-borrowed")
     public List<MostBorrowedBook> getMostBorrowedBooksSince(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date) {
         return borrowService.getMostBorrowedBooksSince(date);
+    }
+
+    @PutMapping("/return")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markBooksAsAvailable(@Valid @RequestBody BookIdsRequest request) {
+        borrowService.markBorrowsAsReturned(request);
     }
 }

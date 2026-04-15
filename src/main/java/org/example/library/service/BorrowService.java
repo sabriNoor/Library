@@ -1,5 +1,6 @@
 package org.example.library.service;
 
+import org.example.library.dto.BookIdsRequest;
 import org.example.library.dto.BorrowRequest;
 import org.example.library.dto.BorrowResponse;
 import org.example.library.dto.MostBorrowedBook;
@@ -18,5 +19,7 @@ public interface BorrowService {
     List<BorrowResponse> getUserBorrowHistory(Long userId);
 
     List<MostBorrowedBook> getMostBorrowedBooksSince(LocalDateTime date);
+
+    void markBorrowsAsReturned(BookIdsRequest request);
 
 }

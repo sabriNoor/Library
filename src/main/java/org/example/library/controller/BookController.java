@@ -75,8 +75,5 @@ public class BookController {
         bookService.deleteBook(id);
     }
 
-    @PutMapping("/available")
-    public void markBooksAsAvailable(@Valid @RequestBody BookIdsRequest request) {
-        bookService.markBooksAsAvailable(request);
-    }
+
 }

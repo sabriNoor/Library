@@ -199,4 +199,58 @@ class BorrowServiceImplTest {
         assertThatThrownBy(() -> borrowService.getMostBorrowedBooksSince(null))
                 .isInstanceOf(BadRequestException.class);
     }
+
+    @Test
+    @DisplayName("Should mark borrows as returned successfully")
+    void shouldMarkBorrowsAsReturnedSuccessfully() {
+        BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L, 3L));
+
+        when(borrowRepository.markBorrowsAsReturned(request.bookIds()))
+                .thenReturn(3);
+
+        assertDoesNotThrow(() ->
+                borrowService.markBorrowsAsReturned(request)
+        );
+
+        verify(borrowRepository).markBorrowsAsReturned(request.bookIds());
+    }
+
+    @Test
+    @DisplayName("Should throw when bookIds list is empty")
+    void shouldThrowWhenBookIdsEmpty() {
+        BookIdsRequest request = new BookIdsRequest(List.of());
+
+        assertThatThrownBy(() ->
+                borrowService.markBorrowsAsReturned(request)
+        ).isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(borrowRepository);
+    }
+
+    @Test
+    @DisplayName("Should throw when bookIds list is null")
+    void shouldThrowWhenBookIdsNull() {
+        BookIdsRequest request = new BookIdsRequest(null);
+
+        assertThatThrownBy(() ->
+                borrowService.markBorrowsAsReturned(request)
+        ).isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(borrowRepository);
+    }
+
+    @Test
+    @DisplayName("Should throw when not all borrows are updated")
+    void shouldThrowWhenNotAllBorrowsReturned() {
+        BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L, 3L));
+
+        when(borrowRepository.markBorrowsAsReturned(request.bookIds()))
+                .thenReturn(2); // less than expected
+
+        assertThatThrownBy(() ->
+                borrowService.markBorrowsAsReturned(request)
+        ).isInstanceOf(ResourceNotFoundException.class);
+
+        verify(borrowRepository).markBorrowsAsReturned(request.bookIds());
+    }
 }

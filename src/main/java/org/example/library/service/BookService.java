@@ -24,5 +24,4 @@ public interface BookService {
 
     void deleteBook(Long id);
 
-    void markBooksAsAvailable(BookIdsRequest request);
 }

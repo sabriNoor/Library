@@ -129,21 +129,6 @@ public class BookServiceImpl implements BookService {
         bookRepository.delete(book);
     }
 
-    @Override
-    @Transactional
-    public void markBooksAsAvailable(BookIdsRequest request) {
-
-        List<Long> bookIds=request.bookIds();
-        if (bookIds == null || bookIds.isEmpty()) {
-            throw new BadRequestException("Book IDs list cannot be empty");
-        }
-
-        int returnedCount = borrowRepository.markBorrowsAsReturned(bookIds);
-
-        if (returnedCount != bookIds.size()) {
-            throw new ResourceNotFoundException("One or more books not found");
-        }
-    }
 
     // ✅ Helper
     private Book fetchBookById(Long id) {

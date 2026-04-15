@@ -191,35 +191,4 @@ class BookServiceImplTest {
         verify(bookRepository, never()).delete(any());
     }
 
-    @Test
-    @DisplayName("Should mark books as available successfully")
-    void shouldMarkBooksAsAvailable() {
-        BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L));
-
-        when(borrowRepository.markBorrowsAsReturned(request.bookIds())).thenReturn(2);
-
-        bookService.markBooksAsAvailable(request);
-
-        verify(borrowRepository).markBorrowsAsReturned(request.bookIds());
-    }
-
-    @Test
-    @DisplayName("Should throw when bookIds list is empty")
-    void shouldThrowWhenEmptyList() {
-        BookIdsRequest request = new BookIdsRequest(List.of());
-
-        assertThatThrownBy(() -> bookService.markBooksAsAvailable(request))
-                .isInstanceOf(BadRequestException.class);
-    }
-
-    @Test
-    @DisplayName("Should throw when not all books are updated")
-    void shouldThrowWhenNotAllBooksUpdated() {
-        BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L));
-
-        when(borrowRepository.markBorrowsAsReturned(request.bookIds())).thenReturn(1);
-
-        assertThatThrownBy(() -> bookService.markBooksAsAvailable(request))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
 }

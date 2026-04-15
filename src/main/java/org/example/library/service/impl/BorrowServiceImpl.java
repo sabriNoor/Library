@@ -1,6 +1,7 @@
 package org.example.library.service.impl;
 
 import jakarta.transaction.Transactional;
+import org.example.library.dto.BookIdsRequest;
 import org.example.library.dto.BorrowRequest;
 import org.example.library.dto.BorrowResponse;
 import org.example.library.dto.MostBorrowedBook;
@@ -105,6 +106,22 @@ public class BorrowServiceImpl implements BorrowService {
         }
 
         return borrowRepository.findMostBorrowedBooksSince(date);
+    }
+
+    @Override
+    @Transactional
+    public void markBorrowsAsReturned(BookIdsRequest request) {
+
+        List<Long> bookIds=request.bookIds();
+        if (bookIds == null || bookIds.isEmpty()) {
+            throw new BadRequestException("Book IDs list cannot be empty");
+        }
+
+        int returnedCount = borrowRepository.markBorrowsAsReturned(bookIds);
+
+        if (returnedCount != bookIds.size()) {
+            throw new ResourceNotFoundException("One or more books not found");
+        }
     }
 
     private BorrowResponse mapToResponse(Borrow borrow) {
