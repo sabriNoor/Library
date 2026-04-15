@@ -9,6 +9,8 @@ import org.example.library.repository.BorrowRepository;
 import org.example.library.repository.UserRepository;
 import org.example.library.service.impl.UserServiceImpl;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -19,6 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -34,87 +38,85 @@ class UserServiceImplTest {
     @InjectMocks
     private UserServiceImpl userService;
 
-    // ✅ CREATE USER SUCCESS
-    @Test
-    void shouldCreateUserSuccessfully() {
-        CreateUserRequest request = new CreateUserRequest("Noor", "noor@gmail.com");
+    private User user;
 
-        User savedUser = User.builder()
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
                 .id(1L)
                 .name("Noor")
                 .email("noor@gmail.com")
                 .build();
+    }
+
+    @Test
+    @DisplayName("Should create user successfully")
+    void shouldCreateUserSuccessfully() {
+        CreateUserRequest request = new CreateUserRequest("Noor", "noor@gmail.com");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userRepository.save(any())).thenReturn(user);
 
         var response = userService.createUser(request);
 
-        assertEquals("Noor", response.name());
-        assertEquals("noor@gmail.com", response.email());
+        assertThat(response.name()).isEqualTo("Noor");
+        assertThat(response.email()).isEqualTo("noor@gmail.com");
+
         verify(userRepository).save(any(User.class));
     }
 
-    // ❌ CREATE USER - EMAIL EXISTS
     @Test
+    @DisplayName("Should throw conflict when email already exists")
     void shouldThrowConflictWhenEmailExists() {
         CreateUserRequest request = new CreateUserRequest("Noor", "noor@gmail.com");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
-        assertThrows(ConflictException.class, () ->
-                userService.createUser(request)
-        );
+        assertThatThrownBy(() -> userService.createUser(request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Email already in use");
 
         verify(userRepository, never()).save(any());
     }
 
-    // ✅ GET USER BY ID SUCCESS
     @Test
+    @DisplayName("Should return user by id")
     void shouldReturnUserWhenFound() {
-        User user = User.builder()
-                .id(1L)
-                .name("Noor")
-                .email("noor@gmail.com")
-                .build();
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         var response = userService.getUserById(1L);
 
-        assertEquals("Noor", response.name());
+        assertThat(response.name()).isEqualTo("Noor");
+
+        verify(userRepository).findById(1L);
     }
 
-    // ❌ GET USER BY ID NOT FOUND
     @Test
+    @DisplayName("Should throw when user not found")
     void shouldThrowWhenUserNotFound() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                userService.getUserById(1L)
-        );
+        assertThatThrownBy(() -> userService.getUserById(1L))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(userRepository).findById(1L);
     }
 
-    // ✅ GET ALL USERS
     @Test
+    @DisplayName("Should return all users")
     void shouldReturnAllUsers() {
-        List<User> users = List.of(
-                User.builder().id(1L).name("A").email("a@mail.com").build(),
-                User.builder().id(2L).name("B").email("b@mail.com").build()
-        );
-
-        when(userRepository.findAll()).thenReturn(users);
+        when(userRepository.findAll()).thenReturn(List.of(user));
 
         var result = userService.getAllUsers();
 
-        assertEquals(2, result.size());
+        assertThat(result).hasSize(1);
+
+        verify(userRepository).findAll();
     }
 
-    // ✅ DELETE USER SUCCESS
     @Test
+    @DisplayName("Should delete user successfully when no active borrows")
     void shouldDeleteUserSuccessfully() {
-        User user = User.builder().id(1L).build();
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(borrowRepository.existsByUserId(1L)).thenReturn(false);
 
@@ -123,27 +125,23 @@ class UserServiceImplTest {
         verify(userRepository).delete(user);
     }
 
-    // ❌ DELETE USER NOT FOUND
     @Test
+    @DisplayName("Should throw when deleting non-existing user")
     void shouldThrowWhenDeletingNonExistingUser() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                userService.deleteUser(1L)
-        );
+        assertThatThrownBy(() -> userService.deleteUser(1L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ❌ DELETE USER WITH ACTIVE BORROWS
     @Test
+    @DisplayName("Should throw when user has active borrows")
     void shouldThrowWhenUserHasActiveBorrows() {
-        User user = User.builder().id(1L).build();
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(borrowRepository.existsByUserId(1L)).thenReturn(true);
 
-        assertThrows(OperationNotAllowedException.class, () ->
-                userService.deleteUser(1L)
-        );
+        assertThatThrownBy(() -> userService.deleteUser(1L))
+                .isInstanceOf(OperationNotAllowedException.class);
 
         verify(userRepository, never()).delete(any());
     }
