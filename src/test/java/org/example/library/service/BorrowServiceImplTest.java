@@ -10,6 +10,8 @@ import org.example.library.repository.BorrowRepository;
 import org.example.library.repository.UserRepository;
 import org.example.library.service.impl.BorrowServiceImpl;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -21,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -39,179 +43,164 @@ class BorrowServiceImplTest {
     @InjectMocks
     private BorrowServiceImpl borrowService;
 
-    // ✅ BORROW BOOK SUCCESS
-    @Test
-    void shouldBorrowBookSuccessfully() {
-        BorrowRequest request = new BorrowRequest(1L, 1L);
+    private User user;
+    private Book book;
+    private Borrow borrow;
 
-        User user = User.builder().id(1L).name("User").build();
-        Book book = Book.builder().id(1L).title("Book").available(true).build();
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .id(1L)
+                .name("User")
+                .build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
-        when(borrowRepository.existsByBookIdAndReturnDateIsNull(1L)).thenReturn(false);
+        book = Book.builder()
+                .id(1L)
+                .title("Book")
+                .available(true)
+                .build();
 
-        Borrow saved = Borrow.builder()
+        borrow = Borrow.builder()
                 .id(1L)
                 .user(user)
                 .book(book)
                 .borrowDate(LocalDateTime.now())
                 .build();
+    }
 
-        when(borrowRepository.save(any())).thenReturn(saved);
+    @Test
+    @DisplayName("Should borrow book successfully")
+    void shouldBorrowBookSuccessfully() {
+        BorrowRequest request = new BorrowRequest(1L, 1L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        when(borrowRepository.existsByBookIdAndReturnDateIsNull(1L)).thenReturn(false);
+        when(borrowRepository.save(any())).thenReturn(borrow);
 
         var response = borrowService.borrowBook(request);
 
-        assertEquals(1L, response.bookId());
+        assertThat(response.bookId()).isEqualTo(1L);
+
         verify(bookRepository).save(book);
+        verify(borrowRepository).save(any(Borrow.class));
     }
 
-    // ❌ USER NOT FOUND
     @Test
+    @DisplayName("Should throw when user not found")
     void shouldThrowWhenUserNotFound() {
         BorrowRequest request = new BorrowRequest(1L, 1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                borrowService.borrowBook(request)
-        );
+        assertThatThrownBy(() -> borrowService.borrowBook(request))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ❌ BOOK NOT FOUND
     @Test
+    @DisplayName("Should throw when book not found")
     void shouldThrowWhenBookNotFound() {
         BorrowRequest request = new BorrowRequest(1L, 1L);
 
-        when(userRepository.findById(1L))
-                .thenReturn(Optional.of(new User()));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                borrowService.borrowBook(request)
-        );
+        assertThatThrownBy(() -> borrowService.borrowBook(request))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ❌ BOOK ALREADY BORROWED
     @Test
+    @DisplayName("Should throw when book already borrowed")
     void shouldThrowWhenBookAlreadyBorrowed() {
         BorrowRequest request = new BorrowRequest(1L, 1L);
-
-        User user = User.builder().id(1L).build();
-        Book book = Book.builder().id(1L).build(); // ✅ FIX
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(borrowRepository.existsByBookIdAndReturnDateIsNull(1L)).thenReturn(true);
 
-        assertThrows(ConflictException.class, () ->
-                borrowService.borrowBook(request)
-        );
+        assertThatThrownBy(() -> borrowService.borrowBook(request))
+                .isInstanceOf(ConflictException.class);
+
+        verify(borrowRepository, never()).save(any());
     }
 
-    // ✅ RETURN BOOK SUCCESS
     @Test
+    @DisplayName("Should return book successfully")
     void shouldReturnBookSuccessfully() {
-        Book book = Book.builder().id(1L).available(false).build();
-
-        Borrow borrow = Borrow.builder()
-                .id(1L)
-                .book(book)
-                .user(new User())
-                .borrowDate(LocalDateTime.now())
-                .build();
+        book.setAvailable(false);
 
         when(borrowRepository.findById(1L)).thenReturn(Optional.of(borrow));
         when(borrowRepository.save(any())).thenReturn(borrow);
 
         var response = borrowService.returnBook(1L);
 
-        assertNotNull(response.returnDate());
+        assertThat(response.returnDate()).isNotNull();
+
         verify(bookRepository).save(book);
+        verify(borrowRepository).save(borrow);
     }
 
-    // ❌ BORROW NOT FOUND
     @Test
+    @DisplayName("Should throw when borrow not found")
     void shouldThrowWhenBorrowNotFound() {
         when(borrowRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                borrowService.returnBook(1L)
-        );
+        assertThatThrownBy(() -> borrowService.returnBook(1L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ❌ ALREADY RETURNED
     @Test
+    @DisplayName("Should throw when book already returned")
     void shouldThrowWhenAlreadyReturned() {
-        Borrow borrow = Borrow.builder()
-                .id(1L)
-                .returnDate(LocalDateTime.now())
-                .build();
+        borrow.setReturnDate(LocalDateTime.now());
 
         when(borrowRepository.findById(1L)).thenReturn(Optional.of(borrow));
 
-        assertThrows(OperationNotAllowedException.class, () ->
-                borrowService.returnBook(1L)
-        );
+        assertThatThrownBy(() -> borrowService.returnBook(1L))
+                .isInstanceOf(OperationNotAllowedException.class);
     }
 
-    // ✅ GET ACTIVE BORROWS
     @Test
+    @DisplayName("Should return active borrows")
     void shouldReturnActiveBorrows() {
-        Borrow borrow = Borrow.builder()
-                .id(1L)
-                .user(User.builder().id(1L).name("User").build())
-                .book(Book.builder().id(1L).title("Book").build())
-                .borrowDate(LocalDateTime.now())
-                .build();
-
         when(borrowRepository.findActiveUserBorrowsWithBooksAndUser(1L))
                 .thenReturn(List.of(borrow));
 
         var result = borrowService.getUserActiveBorrows(1L);
 
-        assertEquals(1, result.size());
+        assertThat(result).hasSize(1);
+
+        verify(borrowRepository).findActiveUserBorrowsWithBooksAndUser(1L);
     }
 
-    // ✅ GET BORROW HISTORY
     @Test
+    @DisplayName("Should return borrow history")
     void shouldReturnBorrowHistory() {
-        Borrow borrow = Borrow.builder()
-                .id(1L)
-                .user(User.builder().id(1L).name("User").build())
-                .book(Book.builder().id(1L).title("Book").build())
-                .borrowDate(LocalDateTime.now())
-                .build();
-
         when(borrowRepository.findBorrowHistoryWithDetails(1L))
                 .thenReturn(List.of(borrow));
 
         var result = borrowService.getUserBorrowHistory(1L);
 
-        assertEquals(1, result.size());
+        assertThat(result).hasSize(1);
+
+        verify(borrowRepository).findBorrowHistoryWithDetails(1L);
     }
 
-    // ✅ MOST BORROWED SUCCESS
     @Test
+    @DisplayName("Should return most borrowed books")
     void shouldReturnMostBorrowedBooks() {
         when(borrowRepository.findMostBorrowedBooksSince(any()))
-                .thenReturn(List.of(mockMostBorrowed()));
+                .thenReturn(List.of(new MostBorrowedBook(1L, 10L)));
 
         var result = borrowService.getMostBorrowedBooksSince(LocalDateTime.now());
 
-        assertEquals(1, result.size());
+        assertThat(result).hasSize(1);
     }
 
-    // ❌ NULL DATE
     @Test
+    @DisplayName("Should throw when date is null")
     void shouldThrowWhenDateIsNull() {
-        assertThrows(BadRequestException.class, () ->
-                borrowService.getMostBorrowedBooksSince(null)
-        );
-    }
-
-    // 🔹 helper
-    private MostBorrowedBook mockMostBorrowed() {
-        return new MostBorrowedBook(1L,10L);
+        assertThatThrownBy(() -> borrowService.getMostBorrowedBooksSince(null))
+                .isInstanceOf(BadRequestException.class);
     }
 }
