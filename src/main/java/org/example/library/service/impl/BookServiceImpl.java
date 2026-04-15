@@ -29,6 +29,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional
     public BookResponse createBook(CreateBookRequest request) {
 
         Author author = authorRepository.findById(request.authorId())
@@ -112,6 +113,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional
     public void deleteBook(Long id) {
 
         Book book = fetchBookById(id);
