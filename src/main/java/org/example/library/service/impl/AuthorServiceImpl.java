@@ -84,7 +84,7 @@ public class AuthorServiceImpl implements AuthorService {
         }
 
         // ✅ Update fields safely
-        if (author.name() != null) {
+        if (author.name() != null && author.name().trim().length()>1) {
             existing.setName(author.name());
         }
 
