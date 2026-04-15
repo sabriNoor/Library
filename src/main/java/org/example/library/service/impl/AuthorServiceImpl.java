@@ -100,7 +100,7 @@ public class AuthorServiceImpl implements AuthorService {
 
         Author author = findAuthorById(id);
 
-        if (!bookRepository.findBooksByAuthor(author.getId()).isEmpty()) {
+        if (bookRepository.existsByAuthorId(author.getId())) {
             throw new BadRequestException("Cannot delete author with existing books");
         }
 

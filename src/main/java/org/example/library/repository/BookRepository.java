@@ -15,6 +15,8 @@ import java.util.Optional;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
 
+    boolean existsByAuthorId(Long authorId);
+
     // ✅ Get all available books (DTO projection)
     @Query("""
         SELECT b.id AS id,
