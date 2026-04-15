@@ -54,7 +54,7 @@ public class AuthorController {
     // ✅ UPDATE
     @PutMapping("/{id}")
     public AuthorResponse updateAuthor(@PathVariable Long id,
-                                       @RequestBody UpdateAuthorRequest request) {
+                                       @Valid @RequestBody UpdateAuthorRequest request) {
         return authorService.updateAuthor(id, request);
     }
 
