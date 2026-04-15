@@ -2,6 +2,7 @@ package org.example.library.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -81,6 +82,16 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "Validation Failed",
                 message
+        );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleUnreadableMessage(HttpMessageNotReadableException ex) {
+
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "Malformed JSON Request",
+                "Request body is invalid or improperly formatted"
         );
     }
 
