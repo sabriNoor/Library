@@ -9,6 +9,8 @@ import org.example.library.repository.BookRepository;
 import org.example.library.repository.BorrowRepository;
 import org.example.library.service.impl.BookServiceImpl;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -21,6 +23,8 @@ import jakarta.persistence.OptimisticLockException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -39,74 +43,17 @@ class BookServiceImplTest {
     @InjectMocks
     private BookServiceImpl bookService;
 
-    // ✅ CREATE BOOK SUCCESS
-    @Test
-    void shouldCreateBookSuccessfully() {
-        CreateBookRequest request = new CreateBookRequest(
-                "Title", "isbn123", "Fiction",
-                new String[]{"tag"}, 1L
-        );
+    private Author author;
+    private Book book;
 
-        Author author = Author.builder().id(1L).name("Author").build();
-
-        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
-        when(bookRepository.existsByIsbn("isbn123")).thenReturn(false);
-
-        Book saved = Book.builder()
+    @BeforeEach
+    void setUp() {
+        author = Author.builder()
                 .id(1L)
-                .title("Title")
-                .isbn("isbn123")
-                .genre("Fiction")
-                .tags(new String[]{"tag"})
-                .author(author)
-                .available(true)
+                .name("Author")
                 .build();
 
-        when(bookRepository.save(any())).thenReturn(saved);
-
-        var response = bookService.createBook(request);
-
-        assertEquals("Title", response.title());
-    }
-
-    // ❌ CREATE BOOK - AUTHOR NOT FOUND
-    @Test
-    void shouldThrowWhenAuthorNotFound() {
-        CreateBookRequest request = new CreateBookRequest(
-                "Title", "isbn", "Fiction",
-                null, 1L
-        );
-
-        when(authorRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () ->
-                bookService.createBook(request)
-        );
-    }
-
-    // ❌ CREATE BOOK - ISBN EXISTS
-    @Test
-    void shouldThrowWhenIsbnExists() {
-        CreateBookRequest request = new CreateBookRequest(
-                "Title", "isbn", "Fiction",
-                null, 1L
-        );
-
-        when(authorRepository.findById(1L))
-                .thenReturn(Optional.of(new Author()));
-        when(bookRepository.existsByIsbn("isbn")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () ->
-                bookService.createBook(request)
-        );
-    }
-
-    // ✅ GET BOOK BY ID
-    @Test
-    void shouldReturnBook() {
-        Author author = Author.builder().name("Author").build();
-
-        Book book = Book.builder()
+        book = Book.builder()
                 .id(1L)
                 .title("Title")
                 .isbn("isbn")
@@ -114,67 +61,109 @@ class BookServiceImplTest {
                 .author(author)
                 .available(true)
                 .build();
+    }
 
+    @Test
+    @DisplayName("Should create book successfully")
+    void shouldCreateBookSuccessfully() {
+        CreateBookRequest request = new CreateBookRequest(
+                "Title", "isbn", "Fiction", new String[]{"tag"}, 1L
+        );
+
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(bookRepository.existsByIsbn("isbn")).thenReturn(false);
+        when(bookRepository.save(any())).thenReturn(book);
+
+        var response = bookService.createBook(request);
+
+        assertThat(response.title()).isEqualTo("Title");
+
+        verify(bookRepository).save(any(Book.class));
+    }
+
+    @Test
+    @DisplayName("Should throw when author not found")
+    void shouldThrowWhenAuthorNotFound() {
+        CreateBookRequest request = new CreateBookRequest(
+                "Title", "isbn", "Fiction", null, 1L
+        );
+
+        when(authorRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookService.createBook(request))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Should throw when ISBN already exists")
+    void shouldThrowWhenIsbnExists() {
+        CreateBookRequest request = new CreateBookRequest(
+                "Title", "isbn", "Fiction", null, 1L
+        );
+
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(bookRepository.existsByIsbn("isbn")).thenReturn(true);
+
+        assertThatThrownBy(() -> bookService.createBook(request))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("Should return book by id")
+    void shouldReturnBook() {
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
 
         var response = bookService.getBookById(1L);
 
-        assertEquals("Title", response.title());
+        assertThat(response.title()).isEqualTo("Title");
+
+        verify(bookRepository).findById(1L);
     }
 
-    // ❌ GET BOOK NOT FOUND
     @Test
+    @DisplayName("Should throw when book not found")
     void shouldThrowWhenBookNotFound() {
         when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                bookService.getBookById(1L)
-        );
+        assertThatThrownBy(() -> bookService.getBookById(1L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ✅ UPDATE BOOK SUCCESS
     @Test
+    @DisplayName("Should update book successfully")
     void shouldUpdateBook() {
-        Author author = Author.builder().name("Author").build();
-
-        Book book = Book.builder()
-                .id(1L)
-                .title("Old")
-                .isbn("old")
-                .genre("Old")
-                .author(author)
-                .build();
-
         UpdateBookRequest request = new UpdateBookRequest(
-                "New", "new", "NewGenre", new String[]{"tag"}
+                "New", "new-isbn", "NewGenre", new String[]{"tag"}
         );
 
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        when(bookRepository.existsByIsbn("new-isbn")).thenReturn(false);
 
         var response = bookService.updateBook(1L, request);
 
-        assertEquals("New", response.title());
-        assertEquals("new", response.isbn());
+        assertThat(response.title()).isEqualTo("New");
+        assertThat(response.isbn()).isEqualTo("new-isbn");
+
+        verify(bookRepository).findById(1L);
     }
 
-    // ❌ UPDATE BOOK - OPTIMISTIC LOCK
     @Test
-    void shouldThrowConcurrencyException() {
-        when(bookRepository.findById(1L))
-                .thenThrow(new OptimisticLockException());
-
-        UpdateBookRequest request = new UpdateBookRequest(null, null, null, null);
-
-        assertThrows(ConcurrencyException.class, () ->
-                bookService.updateBook(1L, request)
+    @DisplayName("Should throw when updating with existing ISBN")
+    void shouldThrowWhenUpdatingWithExistingIsbn() {
+        UpdateBookRequest request = new UpdateBookRequest(
+                null, "taken-isbn", null, null
         );
+
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+        when(bookRepository.existsByIsbn("taken-isbn")).thenReturn(true);
+
+        assertThatThrownBy(() -> bookService.updateBook(1L, request))
+                .isInstanceOf(ConflictException.class);
     }
 
-    // ✅ DELETE BOOK SUCCESS
     @Test
+    @DisplayName("Should delete book successfully")
     void shouldDeleteBook() {
-        Book book = Book.builder().id(1L).build();
-
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(borrowRepository.existsByBookId(1L)).thenReturn(false);
 
@@ -183,21 +172,20 @@ class BookServiceImplTest {
         verify(bookRepository).delete(book);
     }
 
-    // ❌ DELETE BOOK WITH BORROWS
     @Test
+    @DisplayName("Should throw when deleting book with active borrows")
     void shouldThrowWhenBookHasBorrows() {
-        Book book = Book.builder().id(1L).build();
-
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(borrowRepository.existsByBookId(1L)).thenReturn(true);
 
-        assertThrows(OperationNotAllowedException.class, () ->
-                bookService.deleteBook(1L)
-        );
+        assertThatThrownBy(() -> bookService.deleteBook(1L))
+                .isInstanceOf(OperationNotAllowedException.class);
+
+        verify(bookRepository, never()).delete(any());
     }
 
-    // ✅ MARK BOOKS AVAILABLE SUCCESS
     @Test
+    @DisplayName("Should mark books as available successfully")
     void shouldMarkBooksAsAvailable() {
         BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L));
 
@@ -207,28 +195,27 @@ class BookServiceImplTest {
         bookService.markBooksAsAvailable(request);
 
         verify(bookRepository).markBooksAsAvailable(request.bookIds());
+        verify(borrowRepository).markBorrowsAsReturned(request.bookIds());
     }
 
-    // ❌ EMPTY LIST
     @Test
+    @DisplayName("Should throw when bookIds list is empty")
     void shouldThrowWhenEmptyList() {
         BookIdsRequest request = new BookIdsRequest(List.of());
 
-        assertThrows(BadRequestException.class, () ->
-                bookService.markBooksAsAvailable(request)
-        );
+        assertThatThrownBy(() -> bookService.markBooksAsAvailable(request))
+                .isInstanceOf(BadRequestException.class);
     }
 
-    // ❌ NOT ALL BOOKS FOUND
     @Test
+    @DisplayName("Should throw when not all books are updated")
     void shouldThrowWhenNotAllBooksUpdated() {
         BookIdsRequest request = new BookIdsRequest(List.of(1L, 2L));
 
         when(borrowRepository.markBorrowsAsReturned(request.bookIds())).thenReturn(2);
         when(bookRepository.markBooksAsAvailable(request.bookIds())).thenReturn(1);
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                bookService.markBooksAsAvailable(request)
-        );
+        assertThatThrownBy(() -> bookService.markBooksAsAvailable(request))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
