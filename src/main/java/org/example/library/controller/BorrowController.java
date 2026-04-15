@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -47,7 +48,7 @@ public class BorrowController {
     }
 
     @GetMapping("/most-borrowed")
-    public List<MostBorrowedBook> getMostBorrowedBooksSince(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) String date) {
-        return borrowService.getMostBorrowedBooksSince(java.time.LocalDateTime.parse(date));
+    public List<MostBorrowedBook> getMostBorrowedBooksSince(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date) {
+        return borrowService.getMostBorrowedBooksSince(date);
     }
 }
