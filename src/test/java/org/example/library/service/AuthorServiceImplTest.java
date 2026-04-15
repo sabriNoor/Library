@@ -11,6 +11,8 @@ import org.example.library.repository.AuthorRepository;
 import org.example.library.repository.BookRepository;
 import org.example.library.service.impl.AuthorServiceImpl;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -21,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -36,177 +40,161 @@ class AuthorServiceImplTest {
     @InjectMocks
     private AuthorServiceImpl authorService;
 
-    // ✅ CREATE AUTHOR SUCCESS
+    private Author author;
+
+    @BeforeEach
+    void setUp() {
+        author = Author.builder()
+                .id(1L)
+                .name("Noor")
+                .email("noor@mail.com")
+                .build();
+    }
+
     @Test
+    @DisplayName("Should create author successfully")
     void shouldCreateAuthorSuccessfully() {
         CreateAuthorRequest request = new CreateAuthorRequest("Noor", "noor@mail.com");
 
         when(authorRepository.findAuthorByEmail(request.email()))
                 .thenReturn(Optional.empty());
-
-        Author saved = Author.builder()
-                .id(1L)
-                .name("Noor")
-                .email("noor@mail.com")
-                .build();
-
-        when(authorRepository.save(any(Author.class))).thenReturn(saved);
+        when(authorRepository.save(any())).thenReturn(author);
 
         var response = authorService.createAuthor(request);
 
-        assertEquals("Noor", response.name());
-        assertEquals("noor@mail.com", response.email());
+        assertThat(response.name()).isEqualTo("Noor");
+        assertThat(response.email()).isEqualTo("noor@mail.com");
+
+        verify(authorRepository).save(any(Author.class));
     }
 
-    // ❌ CREATE AUTHOR - EMAIL EXISTS
     @Test
+    @DisplayName("Should throw conflict when email already exists")
     void shouldThrowConflictWhenEmailExists() {
         CreateAuthorRequest request = new CreateAuthorRequest("Noor", "noor@mail.com");
 
         when(authorRepository.findAuthorByEmail(request.email()))
-                .thenReturn(Optional.of(new Author()));
+                .thenReturn(Optional.of(author));
 
-        assertThrows(ConflictException.class, () ->
-                authorService.createAuthor(request)
-        );
+        assertThatThrownBy(() -> authorService.createAuthor(request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Email already exists");
+
+        verify(authorRepository, never()).save(any());
     }
 
-    // ✅ GET AUTHOR BY ID
     @Test
+    @DisplayName("Should return author by id")
     void shouldReturnAuthorWhenFound() {
-        Author author = Author.builder().id(1L).name("A").email("a@mail.com").build();
-
         when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
 
         var response = authorService.getAuthorById(1L);
 
-        assertEquals("A", response.name());
+        assertThat(response.name()).isEqualTo("Noor");
+
+        verify(authorRepository).findById(1L);
     }
 
-    // ❌ GET AUTHOR NOT FOUND
     @Test
+    @DisplayName("Should throw when author not found")
     void shouldThrowWhenAuthorNotFound() {
         when(authorRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                authorService.getAuthorById(1L)
-        );
+        assertThatThrownBy(() -> authorService.getAuthorById(1L))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(authorRepository).findById(1L);
     }
 
-    // ✅ GET ALL AUTHORS
     @Test
+    @DisplayName("Should return all authors")
     void shouldReturnAllAuthors() {
-        when(authorRepository.findAll()).thenReturn(List.of(
-                Author.builder().id(1L).name("A").email("a@mail.com").build(),
-                Author.builder().id(2L).name("B").email("b@mail.com").build()
-        ));
+        when(authorRepository.findAll()).thenReturn(List.of(author));
 
         var result = authorService.getAllAuthors();
 
-        assertEquals(2, result.size());
+        assertThat(result).hasSize(1);
+
+        verify(authorRepository).findAll();
     }
 
-    // ✅ SEARCH BY NAME
     @Test
+    @DisplayName("Should search authors by name")
     void shouldSearchAuthorsByName() {
         when(authorRepository.findByNameContainingIgnoreCase("noor"))
-                .thenReturn(List.of(
-                        Author.builder().id(1L).name("Noor").email("n@mail.com").build()
-                ));
+                .thenReturn(List.of(author));
 
         var result = authorService.searchAuthorsByName("noor");
 
-        assertEquals(1, result.size());
+        assertThat(result).hasSize(1);
+
+        verify(authorRepository).findByNameContainingIgnoreCase("noor");
     }
 
-    // ✅ FIND BY EMAIL DOMAIN
     @Test
+    @DisplayName("Should find authors by email domain")
     void shouldFindAuthorsByDomain() {
         when(authorRepository.findAuthorByEmailDomain("mail.com"))
-                .thenReturn(List.of(
-                        Author.builder().id(1L).name("A").email("a@mail.com").build()
-                ));
+                .thenReturn(List.of(author));
 
         var result = authorService.findAuthorsByEmailDomain("mail.com");
 
-        assertEquals(1, result.size());
+        assertThat(result).hasSize(1);
+
+        verify(authorRepository).findAuthorByEmailDomain("mail.com");
     }
 
-    // ✅ UPDATE AUTHOR SUCCESS
     @Test
+    @DisplayName("Should update author successfully")
     void shouldUpdateAuthorSuccessfully() {
-        Author existing = Author.builder()
-                .id(1L)
-                .name("Old")
-                .email("old@mail.com")
-                .build();
+        UpdateAuthorRequest request = new UpdateAuthorRequest("Updated", "updated@mail.com");
 
-        UpdateAuthorRequest request = new UpdateAuthorRequest("New", "new@mail.com");
-
-        when(authorRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(authorRepository.existsByEmail("new@mail.com")).thenReturn(false);
-        when(authorRepository.save(any())).thenReturn(existing);
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(authorRepository.existsByEmail("updated@mail.com")).thenReturn(false);
+        when(authorRepository.save(any())).thenReturn(author);
 
         var response = authorService.updateAuthor(1L, request);
 
-        assertEquals("New", response.name());
-        assertEquals("new@mail.com", response.email());
+        assertThat(response.name()).isEqualTo("Updated");
+        assertThat(response.email()).isEqualTo("updated@mail.com");
+
+        verify(authorRepository).save(author);
     }
 
-    // ❌ UPDATE AUTHOR - EMAIL CONFLICT
     @Test
+    @DisplayName("Should throw conflict when updating with existing email")
     void shouldThrowWhenUpdatingWithExistingEmail() {
-        Author existing = Author.builder()
-                .id(1L)
-                .name("Old")
-                .email("old@mail.com")
-                .build();
-
-        UpdateAuthorRequest request = new UpdateAuthorRequest("New", "taken@mail.com");
-
-        when(authorRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(authorRepository.existsByEmail("taken@mail.com")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () ->
-                authorService.updateAuthor(1L, request)
-        );
-    }
-
-    // ✅ DELETE AUTHOR SUCCESS
-    @Test
-    void shouldDeleteAuthorSuccessfully() {
-        Author author = Author.builder().id(1L).build();
+        UpdateAuthorRequest request = new UpdateAuthorRequest("Updated", "taken@mail.com");
 
         when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
-        when(bookRepository.findBooksByAuthor(1L)).thenReturn(List.of());
+        when(authorRepository.existsByEmail("taken@mail.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authorService.updateAuthor(1L, request))
+                .isInstanceOf(ConflictException.class);
+
+        verify(authorRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should delete author successfully when no books exist")
+    void shouldDeleteAuthorSuccessfully() {
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(bookRepository.existsByAuthorId(1L)).thenReturn(false);
 
         authorService.deleteAuthor(1L);
 
         verify(authorRepository).delete(author);
     }
 
-    // ❌ DELETE AUTHOR WITH BOOKS
     @Test
+    @DisplayName("Should throw when deleting author with existing books")
     void shouldThrowWhenAuthorHasBooks() {
-        Author author = Author.builder().id(1L).build();
-
         when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
-        when(bookRepository.findBooksByAuthor(1L))
-                .thenReturn(List.of(
-                        new BookResponse(
-                                1L,
-                                "123456",
-                                "Test Book",
-                                "Author Name",
-                                "Fiction",
-                                new String[]{"tag1", "tag2"},
-                                true,
-                                1L
-                        )
-                ));
+        when(bookRepository.existsByAuthorId(1L)).thenReturn(true);
 
-        assertThrows(BadRequestException.class, () ->
-                authorService.deleteAuthor(1L)
-        );
+        assertThatThrownBy(() -> authorService.deleteAuthor(1L))
+                .isInstanceOf(BadRequestException.class);
+
+        verify(authorRepository, never()).delete(any());
     }
 }
